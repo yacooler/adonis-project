@@ -34,6 +34,12 @@ export default class ActivitiesController {
     const found = await Activity.findOrFail(params.id);
     const payload = await request.validateUsing(activityValidator, {meta:{activityId: found.activityId }});
     
+    //см. Вопросы.txt
+    if (payload.isCatering === false){
+      payload.cateringComment = null;
+      payload.cateringAmount = null;
+    }
+
     const res = await found.merge(payload).save();
     return res;
   }
@@ -43,7 +49,7 @@ export default class ActivitiesController {
    */
   async destroy({ params }: HttpContext) {
     const found = await Activity.findOrFail(params.id);
-    //await found.delete();
+    await found.delete();
     return found;
   }
 }

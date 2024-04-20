@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
-
+import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import { type BelongsTo } from '@adonisjs/lucid/types/relations'
+import Category from './category.js'
 
 export default class Activity extends BaseModel {
   static table = 'act.activities'
@@ -27,10 +28,16 @@ export default class Activity extends BaseModel {
   declare duration: number
 
   @column()
-  declare type: string
+  declare slug: string
 
   @column()
-  declare slug: string
+  declare isCatering: boolean
+
+  @column()
+  declare cateringComment: string | null
+
+  @column()
+  declare cateringAmount: number | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -38,5 +45,10 @@ export default class Activity extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
+  @column()
+  declare categoryId: number
 
+  //У активности может быть одна категория
+  @belongsTo(()=>Category)
+  declare category: BelongsTo<typeof Category>
 }
