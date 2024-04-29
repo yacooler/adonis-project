@@ -1,6 +1,10 @@
-import Category from '#models/category';
-import vine from '@vinejs/vine'
+import Activity from '#models/activity';
+import vine, { VineNumber, VineObject } from '@vinejs/vine'
 import { DateTime } from 'luxon';
+import buildExistsRule from './helpers/buildExistsRule.js';
+import buildUniqueRule from './helpers/buildUniqieRule.js';
+import Category from '#models/category';
+import Speaker from '#models/speaker';
 
 
 const customerGroup = vine.group([
@@ -20,7 +24,8 @@ const customerGroup = vine.group([
     )
   });
 
-const cateringGroup = vine.group([
+//isOptional true если мы хотим иметь возможность в целом не передавать группу
+const cateringGroup = (isOptional: boolean) =>  vine.group([
     vine.group.if(
       (data) => vine.helpers.isTrue(data.isCatering),
       {
@@ -29,9 +34,19 @@ const cateringGroup = vine.group([
         cateringAmount: vine.number(),
       }
     ),
+    vine.group.if(
+      (data) => {
+        vine.helpers.isFalse(data.isCatering)
+      },
+      {
+        isCatering: vine.literal(false),
+        cateringComment: vine.any().parse(()=>null).nullable(),
+        cateringAmount: vine.any().parse(()=>null).nullable()
+      }
+    ),
     vine.group.else({
-      isCatering: vine.literal(false)
-    }),
+      isCatering: isOptional ? vine.boolean().optional() : vine.boolean()
+    })
   ]);
 
 
@@ -43,30 +58,20 @@ const activityValidator = vine
         holdDate: vine.date({formats:'YYYY-MM-DD'}).after('today').transform(d=> DateTime.fromJSDate(d)),
         holdTime: vine.date({formats: 'hh:mm:ss'}).transform(d=> DateTime.fromJSDate(d)),
         duration: vine.number().min(1).max(23),
-        categoryId: vine.number().exists(async (_db, value) => {
-          return (await Category.find(value)) ? true : false;
-        }),
+        categoryId: vine.number().exists(buildExistsRule(Category)),
         cateringComment: vine.string().nullable().optional(), //Если поля не поставить сюда, TS не правильно выводит тип для payload
         cateringAmount: vine.number().nullable().optional(), //Если поля не поставить сюда, TS не правильно выводит тип для payload
-        slug: vine.string().url().unique(
-            async (db, value, field) => {
-                //Для INSERT
-                if(!field.meta.activityId){
-                    return !(await db
-                        .from('act.activities')
-                        .where('slug', value)
-                        .first());
-                }
-                //Для UPDATE     
-                return !(await db
-                    .from('act.activities')
-                    .where('slug', value)
-                    .andWhereNot('activity_id', field.meta.activityId)
-                    .first());                  
-        }),
+        slug: vine.string().url().unique(buildUniqueRule(Activity, 'activityId')),
+        speakers: vine.array(
+            vine.object({
+                id: vine.number(), 
+                duration: vine.number()
+              })
+            )
+            .primaryKeysExists({model: Speaker, primaryKeyMapper: (a)=> (a as any)['id'] }).optional()
     })
         .merge(customerGroup)
-        .merge(cateringGroup)
+        .merge(cateringGroup(false))
 
 );
 

@@ -1,7 +1,8 @@
 import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
-import { type BelongsTo } from '@adonisjs/lucid/types/relations'
+import { BaseModel, belongsTo, column, manyToMany } from '@adonisjs/lucid/orm'
+import type { ManyToMany, BelongsTo } from '@adonisjs/lucid/types/relations'
 import Category from './category.js'
+import Speaker from './speaker.js'
 
 export default class Activity extends BaseModel {
   static table = 'act.activities'
@@ -30,7 +31,7 @@ export default class Activity extends BaseModel {
   @column()
   declare slug: string
 
-  @column()
+  @column({consume: Boolean})
   declare isCatering: boolean
 
   @column()
@@ -49,6 +50,26 @@ export default class Activity extends BaseModel {
   declare categoryId: number
 
   //У активности может быть одна категория
-  @belongsTo(()=>Category)
+  @belongsTo(()=>Category, {foreignKey:'categoryId'})
   declare category: BelongsTo<typeof Category>
+
+  //У активности может быть множество спикеров
+  //Таблицы по умолчанию в ед. числе
+  //Локальные ключи по умолчанию id, связующие - через "_"
+  @manyToMany(() => Speaker, {
+      pivotTable: 'act.activities_speakers',
+
+      localKey: 'activityId',
+      pivotForeignKey: 'activity_id',
+      relatedKey: 'speakerId',
+      pivotRelatedForeignKey: 'speaker_id',
+
+      pivotColumns: ['duration'],
+
+      pivotTimestamps: true
+    })
+
+  declare speakers: ManyToMany<typeof Speaker>
+
+
 }
