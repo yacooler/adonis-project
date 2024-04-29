@@ -64,11 +64,11 @@ const activityValidator = vine
         slug: vine.string().url().unique(buildUniqueRule(Activity, 'activityId')),
         speakers: vine.array(
             vine.object({
-                id: vine.number(), 
+                speakerId: vine.number(), 
                 duration: vine.number()
               })
             )
-            .primaryKeysExists({model: Speaker, primaryKeyMapper: (a)=> (a as any)['id'] }).optional()
+            .primaryKeysExists({model: Speaker, primaryKeyMapper: (a)=> (a as any)['speakerId'] }).optional()
     })
         .merge(customerGroup)
         .merge(cateringGroup(false))

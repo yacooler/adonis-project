@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Activity from '#models/activity'
 import activityValidator from '#validators/activityValidator';
+import db from '@adonisjs/lucid/services/db';
 
 export default class ActivitiesController {
   /**
@@ -35,10 +36,8 @@ export default class ActivitiesController {
    */
   async update({ params, request }: HttpContext) {
 
-    const [ activityToUpdate ] = await Activity
-      .query()
-      .where(Activity.primaryKey, params.id)
-      .preload('speakers', (query) => {query.pivotColumns(['duration'])})
+    const activityToUpdate = await Activity.findOrFail(params.id);
+    await activityToUpdate.load('speakers');
 
     const payload = await request.validateUsing(activityValidator, {meta:{activityId: activityToUpdate.activityId }});
     
@@ -47,21 +46,35 @@ export default class ActivitiesController {
       payload.cateringAmount = null;
     }
 
-    //Если нашли спикеров в пэйлоаде или в обновляемой записи - синхронизируем значения
-    if (payload.speakers || activityToUpdate.speakers){
-      
-      if(payload.speakers && payload.speakers.length > 0){
-        //Подготовили объект с доп данными
-        const speakers = Object.fromEntries(new Map(payload.speakers.map(e =>  ([e.id.toString(), {'duration': e.duration}]))))  
-        await activityToUpdate.related('speakers').sync(speakers);
-      } else {
-        await activityToUpdate.related('speakers').sync([]);
-      }   
-    }
 
-    const res = await activityToUpdate.merge(payload).save();
-    await res.load('speakers');
-    return res;
+    //Записываем сущность и связанные сущности в транзакции
+    const trx = await db.transaction()
+  
+    try {
+      activityToUpdate.useTransaction(trx)
+      //Если нашли спикеров в пэйлоаде или в обновляемой записи - синхронизируем значения
+      let speakersToSync;
+
+      if (payload.speakers || activityToUpdate.speakers){  
+        if(payload.speakers && payload.speakers.length > 0){
+          //Если пришли новые значения в пэйлоаде
+          speakersToSync = Object.fromEntries(new Map(payload.speakers.map(e =>  ([e.speakerId.toString(), {'duration': e.duration}]))));
+        } else {
+          speakersToSync = [];
+        } 
+        await activityToUpdate.useTransaction(trx).related('speakers').sync(speakersToSync);  
+      }
+
+      const res = await activityToUpdate.useTransaction(trx).merge(payload).save();
+  
+      await trx.commit()
+      await res.load('speakers');
+      res.speakers.forEach(sp => sp.duration = sp.$extras.pivot_duration)
+      return res;
+    } catch (error) {
+      await trx.rollback()
+    }
+   
   }
 
   /**

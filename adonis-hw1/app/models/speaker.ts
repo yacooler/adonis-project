@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, computed } from '@adonisjs/lucid/orm'
 
 export default class Speaker extends BaseModel {
 
@@ -16,4 +16,8 @@ export default class Speaker extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
+
+  //Это не колонка в БД, а просто поле для вывода экстра информации
+  @computed()
+  declare duration: number;
 }
