@@ -20,7 +20,7 @@ const primaryKeysExistsRule = vine.createRule<primaryKeysExistsOptions>(async (v
   const valuesArray = value as SchemaTypes[];
 
   console.log(valuesArray);
-  //Мапер по умолчанию предполагает, что нам пришел плоский массив чисел и мапер умеет конвертировать каждый элемент в
+  //Мапер по умолчанию предполагает, что нам пришел плоский массив чисел и мапер умеет конвертировать каждый элемент в число
   const defaultPrimaryKeyMapper = (val: SchemaTypes): number => {
     return val as unknown as number;
   }
