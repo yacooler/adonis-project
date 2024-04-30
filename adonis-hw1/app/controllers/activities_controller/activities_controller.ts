@@ -42,11 +42,6 @@ export default class ActivitiesController {
 
     const payload = await request.validateUsing(activityValidator, {meta:{activityId: activityToUpdate.activityId }});
     
-    if (payload.isCatering === false){
-      payload.cateringComment = null;
-      payload.cateringAmount = null;
-    }
-
     //Записываем спикеров
     return activitySyncSpeakers(activityToUpdate, payload);
     
