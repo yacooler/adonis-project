@@ -8,7 +8,7 @@
 */
 
 import router from '@adonisjs/core/services/router'
-import ActivitiesController from '#controllers/activities_controller'
+import ActivitiesController from '#controllers/activities_controller/activities_controller'
 import CategoriesController from '#controllers/categories_controller'
 import SpeakersController from '#controllers/speakers_controller'
 
