@@ -21,6 +21,7 @@ export default class Category extends BaseModel {
   @column()
   declare description: string
 
-  @hasMany(()=>Activity)
+  //Указываем внешний ключ, указанный у модели у activity
+  @hasMany(()=>Activity, {foreignKey:'categoryId'})
   declare activities: HasMany<typeof Activity>
 }

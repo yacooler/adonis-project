@@ -8,7 +8,9 @@
 */
 
 import router from '@adonisjs/core/services/router'
-import ActivitiesController from '#controllers/activities_controller'
+import ActivitiesController from '#controllers/activities_controller/activities_controller'
+import CategoriesController from '#controllers/categories_controller'
+import SpeakersController from '#controllers/speakers_controller'
 
 router.get('/', async () => {
   return {
@@ -16,5 +18,7 @@ router.get('/', async () => {
   }
 })
 
-router.resource('activity', ActivitiesController)
+router.resource('activity', ActivitiesController).except(['create','edit']);
+router.resource('category', CategoriesController).except(['create','edit']);
+router.resource('speaker', SpeakersController).except(['create','edit']);
 
